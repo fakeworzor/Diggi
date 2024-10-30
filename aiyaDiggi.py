@@ -2,7 +2,6 @@ import pygame
 import random
 import math
 from enum import Enum
-import time
 
 pygame.init()
 
@@ -13,6 +12,11 @@ TILE_SIZE = 8 # Default tile size
 DESTRUCTION_RADIUS = TILE_SIZE + 10
 CHUNK_SIZE = 16  # Number of tiles in a chunk (both x and y)
 SURFACE_HEIGHT = 5  # Height of surface in chunks from top
+
+# FPS
+clock = pygame.time.Clock()
+fps = 60
+
 
 
 # Colors and Block Types
@@ -27,13 +31,13 @@ class BlockType(Enum):
     OIL = (7, "Oil", (53, 53, 53))
 
 
-# Ore generation chances (out of 100)
+# Ore generation chances (out of 100,000)
 ORE_CHANCES = {
     BlockType.STONE: 4500,
     BlockType.IRON: 150,
     BlockType.GOLD: 10,
-    BlockType.DIAMOND: 10,
-    BlockType.EMERALD: 10,
+    BlockType.DIAMOND: 5,
+    BlockType.EMERALD: 2,
     BlockType.OIL: 100
 }
 
@@ -57,6 +61,7 @@ playerX_change = 0
 playerY_change = 0
 player_angle = 0
 speed = 5
+angle = 5
 
 playerImg = pygame.image.load("drill.png")
 playerImg = pygame.transform.scale(playerImg, (width_player, height_player))
@@ -214,15 +219,15 @@ class TerrainManager:
                     chunk = self.chunks.get((local_chunk_x, local_chunk_y))
                     if chunk:
                         tile = chunk.tiles.get((local_tile_x, local_tile_y))
-                        if tile and tile != BlockType.AIR:
-                            # Create particles
-                            particle_x = tile_x * TILE_SIZE + TILE_SIZE // 2
-                            particle_y = tile_y * TILE_SIZE + TILE_SIZE // 2
-                            self.particle_manager.create_destruction_particles(
-                                particle_x,
-                                particle_y,
-                                tile.value[2]
-                            )
+                        if tile != BlockType.AIR and tile not in self.destroyed_tiles:
+                            # # Create particles
+                            # particle_x = tile_x * TILE_SIZE + TILE_SIZE // 2
+                            # particle_y = tile_y * TILE_SIZE + TILE_SIZE // 2
+                            # self.particle_manager.create_destruction_particles(
+                            #     particle_x,
+                            #     particle_y,
+                            #     tile.value[2]
+                            # )
                             # Mark tile as destroyed
                             self.destroyed_tiles.add((local_chunk_x, local_chunk_y, local_tile_x, local_tile_y))
 
@@ -276,8 +281,6 @@ pressA = False
 pressS = False
 pressD = False
 
-# FPS
-fps = pygame.time.Clock()
 
 
 def update_camera(target_x, target_y):
@@ -293,10 +296,12 @@ def player(x, y, angle):
     screen.blit(rotated_player, player_rect)
 
 
+
+
 # Game loop
 running = True
 while running:
-    fps.tick(60)
+    clock.tick(fps)
     screen.fill((135, 206, 235))  # Sky blue background
 
     for event in pygame.event.get():
@@ -308,19 +313,19 @@ while running:
             if event.key == pygame.K_a:
                 playerX_change = -speed
                 pressA = True
-                player_angle = 90
+                player_angle = -angle
             if event.key == pygame.K_d:
                 playerX_change = speed
                 pressD = True
-                player_angle = -90
+                player_angle = angle
             if event.key == pygame.K_w:
                 playerY_change = -speed
                 pressW = True
-                player_angle = 180
+                player_angle = angle
             if event.key == pygame.K_s:
                 playerY_change = speed
                 pressS = True
-                player_angle = 0
+                player_angle = -angle
             if event.key == pygame.K_e:
                 # Check for upgrade station interaction
                 if terrain_manager.upgrade_station and \
